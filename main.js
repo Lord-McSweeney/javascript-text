@@ -1,3 +1,5 @@
+//https://stackoverflow.com/questions/1634341/overloading-arithmetic-operators-in-javascript
+
 function insertCharAtPosition(string, char, pos) {
     return string.slice(0, pos) + char + string.slice(pos, string.length);
 }
@@ -23,6 +25,11 @@ function launchGame(fn) {
     win.fn = fn;
     win.API = {
         timing: {
+        },
+        handlers: {
+            onhide: function(close) {
+                close();
+            }
         }
     };
     win.setInterval(function() {
@@ -36,7 +43,7 @@ function launchGame(fn) {
         this.currentTextualInput = "";
         this.actualData = "";
         this.waitingForInput = false;
-        this.input = async function() {
+        this.input = async function(txt) {
             this.waitingForInput = true;
             return await new Promise((resolve, reject) => {
                 console.log(this.textarea);
@@ -64,7 +71,16 @@ function launchGame(fn) {
                 }
             });
         }
-        this.print = function(txt) {
+        this.print = function() {
+            var args = Array.from(arguments);
+            var txt = "";
+            for (var i = 0; i < arguments.length; i ++) {
+                if (i !== arguments.length - 1) {
+                    txt += arguments[i] + " ";
+                } else {
+                    txt += arguments[i];
+                }
+            }
             if (!this.waitingForInput) {
                 this.actualData += (txt === undefined ? "" : txt);
                 this.textarea.value += (txt === undefined ? "" : txt);
@@ -81,14 +97,20 @@ function launchGame(fn) {
         return Date.now();
     }
     win.document.body.append(textarea);
-    fn(win, win.API.TextDisplayer);
+    win.onblur = function() {
+        if (typeof win.API.handlers.onhide === "function") {
+            if (document.hidden) {
+                win.API.handlers.onhide(win.close);
+            }
+        }
+    }
+    fn(win.API.TextDisplayer, null, win.API);
 }
-async function game(win, TextDisplayer, TextCanvas) {
+async function game(TextDisplayer, TextCanvas, API) {
     console.log(TextDisplayer);
-    var textinterface = new TextDisplayer();
-    textinterface.print("hello!");
-    console.log(textinterface.textarea);
-    var input = await textinterface.input();
-    textinterface.print("You said: "+ input);
+    API.handlers.onhide = function() {
+        // Override default behavior. Normally it would close the window onhide.
+    }
+    var txt = new TextDisplayer();
 }
 launchGame(game);
